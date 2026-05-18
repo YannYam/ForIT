@@ -262,10 +262,14 @@ $title = e($thread['thread_title']);
 
                                 <div class="comment-actions">
                                     <?php if ($user && $user['status'] !== 'restricted'): ?>
+                                        <!-- Bug 2 fix: tombol Balas ada di bawah komentar, toggle langsung form di bawahnya -->
+                                        <!-- Bug 3 fix: btn-reply-toggle sekarang bisa hide juga (toggle) dengan teks dinamis -->
                                         <button class="comment-action-btn btn-reply-toggle"
-                                            data-target="reply-form-<?= e($comment['comment_id']) ?>">
-                                            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-                                            Balas
+                                            data-target="reply-form-<?= e($comment['comment_id']) ?>"
+                                            id="btn-reply-<?= e($comment['comment_id']) ?>">
+                                            <svg class="icon-reply" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+                                            <svg class="icon-close" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            <span class="reply-btn-text">Balas</span>
                                         </button>
                                     <?php endif; ?>
 
@@ -283,7 +287,7 @@ $title = e($thread['thread_title']);
                                     <?php endif; ?>
                                 </div>
 
-                                <!-- Form balas (tersembunyi) -->
+                                <!-- Form balas (tersembunyi, toggle via tombol Balas di atas) -->
                                 <?php if ($user && $user['status'] !== 'restricted'): ?>
                                     <div class="reply-form-wrapper" id="reply-form-<?= e($comment['comment_id']) ?>">
                                         <form method="POST" action="">
@@ -298,7 +302,12 @@ $title = e($thread['thread_title']);
                                                 <div class="comment-form-field">
                                                     <textarea name="content" class="comment-textarea" rows="2"
                                                         placeholder="Tulis balasan..."></textarea>
-                                                    <div class="comment-form-submit">
+                                                    <div class="comment-form-submit" style="gap:0.5rem;display:flex;justify-content:flex-end;">
+                                                        <button type="button" class="btn btn-ghost btn-primary btn-sm btn-cancel-reply"
+                                                            data-target="reply-form-<?= e($comment['comment_id']) ?>"
+                                                            data-btn="btn-reply-<?= e($comment['comment_id']) ?>">
+                                                            Batal
+                                                        </button>
                                                         <button type="submit" class="btn btn-primary btn-sm">Kirim Balasan</button>
                                                     </div>
                                                 </div>
@@ -403,17 +412,164 @@ $title = e($thread['thread_title']);
     <?php endif; ?>
 
     <script>
-    // Toggle reply form
+    // Bug 2 & 3 fix: Toggle reply form dengan ikon dan teks dinamis
+    // Klik "Balas" → buka form + ganti ikon jadi X + teks "Tutup"
+    // Klik lagi atau "Batal" → tutup form kembali
+    function openReplyForm(btn, form) {
+        form.classList.add('open');
+        btn.querySelector('.icon-reply').style.display = 'none';
+        btn.querySelector('.icon-close').style.display = '';
+        btn.querySelector('.reply-btn-text').textContent = 'Tutup';
+        btn.classList.add('active-reply');
+        form.querySelector('textarea')?.focus();
+    }
+
+    function closeReplyForm(btn, form) {
+        form.classList.remove('open');
+        btn.querySelector('.icon-reply').style.display = '';
+        btn.querySelector('.icon-close').style.display = 'none';
+        btn.querySelector('.reply-btn-text').textContent = 'Balas';
+        btn.classList.remove('active-reply');
+        if (form.querySelector('textarea')) form.querySelector('textarea').value = '';
+    }
+
     document.querySelectorAll('.btn-reply-toggle').forEach(function(btn) {
         btn.addEventListener('click', function() {
-            const targetId = this.dataset.target;
-            const form = document.getElementById(targetId);
-            if (form) {
-                form.classList.toggle('open');
-                if (form.classList.contains('open')) {
-                    form.querySelector('textarea')?.focus();
-                }
+            const form = document.getElementById(this.dataset.target);
+            if (!form) return;
+            if (form.classList.contains('open')) {
+                closeReplyForm(this, form);
+            } else {
+                openReplyForm(this, form);
             }
+        });
+    });
+
+    // Tombol Batal di dalam form balasan
+    document.querySelectorAll('.btn-cancel-reply').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            const form   = document.getElementById(this.dataset.target);
+            const toggle = document.getElementById(this.dataset.btn);
+            if (form && toggle) closeReplyForm(toggle, form);
+        });
+    });
+
+    // Pagination / Load More Komentar
+    document.addEventListener('DOMContentLoaded', function() {
+        const ROOT_LIMIT = 8;
+        const NESTED_LIMIT = 4;
+
+        // Logika untuk Komentar Utama (Root) -> tombol pill di tengah
+        function createRootLoadMoreBtn(container) {
+            const items = Array.from(container.children).filter(el => el.matches('.comment-item:not(.comment-reply)'));
+            if (items.length <= ROOT_LIMIT) return;
+
+            let currentIndex = ROOT_LIMIT;
+            
+            // Sembunyikan item yang melebihi batas
+            for (let i = currentIndex; i < items.length; i++) {
+                items[i].style.display = 'none';
+            }
+
+            const btnWrapper = document.createElement('div');
+            btnWrapper.style.textAlign = 'center';
+            btnWrapper.style.marginTop = '1rem';
+            btnWrapper.style.marginBottom = '0.5rem';
+
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-ghost btn-primary btn-sm';
+            btn.style.borderRadius = '50px';
+            btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:0.3rem;vertical-align:middle"><polyline points="6 9 12 15 18 9"/></svg> Komentar lainnya`;
+
+            btn.addEventListener('click', function() {
+                const nextIndex = currentIndex + ROOT_LIMIT;
+                for (let i = currentIndex; i < Math.min(nextIndex, items.length); i++) {
+                    items[i].style.display = '';
+                }
+                currentIndex = nextIndex;
+                if (currentIndex >= items.length) {
+                    btnWrapper.remove();
+                }
+            });
+
+            btnWrapper.appendChild(btn);
+            container.appendChild(btnWrapper);
+        }
+
+        // Logika untuk Balasan Bersarang (Nested) -> teks inline gaya Instagram
+        function createNestedLoadMoreBtn(container) {
+            const items = Array.from(container.children).filter(el => el.matches('.comment-item.comment-reply'));
+            const total = items.length;
+            if (total === 0) return;
+
+            // Sembunyikan SEMUA balasan di awal
+            let currentIndex = 0;
+            for (let i = currentIndex; i < total; i++) {
+                items[i].style.display = 'none';
+            }
+
+            const btnWrapper = document.createElement('div');
+            btnWrapper.style.marginTop = '0.5rem';
+            btnWrapper.style.marginBottom = '1rem';
+
+            const btn = document.createElement('button');
+            btn.style.background = 'none';
+            btn.style.border = 'none';
+            btn.style.color = 'var(--gray-500, #6b7280)';
+            btn.style.fontSize = '0.8125rem';
+            btn.style.fontWeight = '600';
+            btn.style.cursor = 'pointer';
+            btn.style.padding = '0';
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.fontFamily = 'inherit';
+
+            // Hover effect
+            btn.addEventListener('mouseover', () => btn.style.color = 'var(--gray-800, #1f2937)');
+            btn.addEventListener('mouseout', () => btn.style.color = 'var(--gray-500, #6b7280)');
+
+            const updateBtnText = () => {
+                const remaining = total - currentIndex;
+                if (currentIndex === 0) {
+                    btn.innerHTML = `<span style="margin-right:0.5rem; letter-spacing:-1px;">——</span> Lihat balasan (${remaining})`;
+                } else {
+                    btn.innerHTML = `<span style="margin-right:0.5rem; letter-spacing:-1px;">——</span> Lihat balasan lainnya (${remaining})`;
+                }
+            };
+
+            updateBtnText();
+
+            btn.addEventListener('click', function() {
+                const nextIndex = currentIndex + NESTED_LIMIT;
+                for (let i = currentIndex; i < Math.min(nextIndex, total); i++) {
+                    items[i].style.display = '';
+                }
+                currentIndex = nextIndex;
+                
+                if (currentIndex >= total) {
+                    btnWrapper.remove();
+                } else {
+                    updateBtnText();
+                    // Pindahkan tombol tepat setelah balasan terakhir yang ditampilkan
+                    // (yaitu sebelum elemen balasan yang masih tersembunyi)
+                    container.insertBefore(btnWrapper, items[currentIndex]);
+                }
+            });
+
+            btnWrapper.appendChild(btn);
+            // Masukkan tombol di awal kontainer balasan (karena belum ada yang tampil)
+            container.insertBefore(btnWrapper, items[0] || container.firstChild);
+        }
+
+        // Terapkan ke komentar utama
+        const commentList = document.getElementById('comment-list');
+        if (commentList) {
+            createRootLoadMoreBtn(commentList);
+        }
+
+        // Terapkan ke setiap blok balasan bersarang (nested)
+        document.querySelectorAll('.comment-replies').forEach(function(repliesContainer) {
+            createNestedLoadMoreBtn(repliesContainer);
         });
     });
 

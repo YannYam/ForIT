@@ -396,13 +396,13 @@ nav .right-side {
 /* Primary */
 .btn.btn-primary          { background-color: var(--primary); color: white; box-shadow: 0 2px 8px rgba(21,93,252,0.25); }
 .btn.btn-primary:hover    { background-color: var(--primary-dark); box-shadow: 0 4px 12px rgba(21,93,252,0.35); transform: translateY(-1px); }
-.btn.btn-ghost.btn-primary         { border-color: var(--primary); color: var(--primary); }
+.btn.btn-ghost.btn-primary         { border-color: var(--primary); color: var(--primary); background-color: transparent; box-shadow: none; }
 .btn.btn-ghost.btn-primary:hover   { background-color: var(--primary); color: white; }
 
 /* White */
 .btn.btn-white        { background-color: white; color: var(--primary); border: 1.5px solid var(--gray-200); }
 .btn.btn-white:hover  { background-color: var(--gray-50); border-color: var(--gray-300); }
-.btn.btn-ghost.btn-white       { border-color: white; color: white; }
+.btn.btn-ghost.btn-white       { border-color: white; color: white; background-color: transparent; box-shadow: none; }
 .btn.btn-ghost.btn-white:hover { background-color: white; color: var(--gray-700); }
 
 /* Danger */

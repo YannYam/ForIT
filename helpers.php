@@ -136,11 +136,13 @@ function has_role(string ...$roles): bool
 
 /**
  * Format tanggal relatif (misal: "2 jam lalu")
+ * Menggunakan timezone WIB (Asia/Jakarta) agar waktu selalu akurat
  */
 function time_ago(string $datetime): string
 {
-    $now  = new DateTime();
-    $past = new DateTime($datetime);
+    $tz   = new DateTimeZone('Asia/Jakarta');
+    $now  = new DateTime('now', $tz);
+    $past = new DateTime($datetime, $tz);
     $diff = $now->diff($past);
 
     if ($diff->y > 0) return $diff->y . ' tahun lalu';

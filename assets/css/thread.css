@@ -266,6 +266,8 @@
     display: inline-flex;
     align-items: center;
     gap: 0.3rem;
+    white-space: nowrap;
+    text-decoration: none;
 }
 
 .comment-action-btn:hover {
@@ -276,6 +278,13 @@
 .comment-action-btn.danger:hover {
     background: #fef2f2;
     color: #dc2626;
+}
+
+/* State aktif tombol Balas (form reply sedang terbuka) */
+.comment-action-btn.active-reply {
+    background: #eff6ff;
+    color: #155DFC;
+    border: 1px solid #bfdbfe;
 }
 
 /* Nested replies */
